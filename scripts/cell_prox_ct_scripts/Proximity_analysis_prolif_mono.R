@@ -6,14 +6,6 @@ library(doParallel)
 library(tidyr)
 library(splancs)
 
-# Input is specific need:
-### cell ids as rownames
-### coordinates column names as x_centroid and y_centroid 
-### cell annotation column as final_CT OR change in LINES 115, 116, 180
-#TODO: changes to be made
-# LINE 143: Change number of cores to 24 if running bash script according to av_calc_cell_prox.sh
-# LINE 184: Change radius to whatever works for your goals
-
 filter <- dplyr::filter
 select <- dplyr::select
 pull <- dplyr::pull
