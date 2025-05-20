@@ -221,7 +221,7 @@ s2_id_list <- c(
   s2_PDL005 = "/scratch/smallapragada/run2/0005297/s2_PDL005_06_27_2024_cells_stats.csv",
   s2_PDL007 = "/scratch/smallapragada/run2/0005297/s2_PDL007_06_27_2024_cells_stats.csv",
   s2_PDL014 = "/scratch/smallapragada/run2/0005297/s2_PDL014_06_27_2024_cells_stats.csv",
-  s2_PDL017 = "/scratch/smallapragada/run2/0005297/s2_BPD_03_06_27_2024_cells_stats.csv",
+  s2_PDL017 = "/scratch/smallapragada/run2/0005297/s2_PDL017_06_27_2024_cells_stats.csv",
   s2_PDL001 = "/scratch/smallapragada/run2/0005297/s2_PDL001_06_27_2024_cells_stats.csv",
   s2_PDL002 = "/scratch/smallapragada/run2/0005297/s2_PDL002_06_27_2024_cells_stats.csv")
 
