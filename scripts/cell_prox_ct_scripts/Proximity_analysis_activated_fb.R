@@ -21,11 +21,6 @@ run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_cniches_tniche
 meta <- run2_final@meta.data
 write.csv(meta, "/scratch/smallapragada/run2/proximity_results_allsamples_allCTs_2025_04_18/input/run2_final_metadata.csv", row.names = T)
 
-# Input is specific need:
-### cell ids as rownames
-### coordinates column names as x_centroid and y_centroid 
-### cell annotation column as final_CT OR change in LINES 115, 116, 180
-
 filter <- dplyr::filter
 select <- dplyr::select
 pull <- dplyr::pull
