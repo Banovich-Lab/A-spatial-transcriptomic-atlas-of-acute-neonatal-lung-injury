@@ -16,7 +16,7 @@ set.seed(0712)
 work_dir <- setwd("/scratch/smallapragada/run2")
 
 # Load data in
-run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_CT_2025_03_26.rds")
+run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_cniches_tniches_allsamples_2025_03_26.rds")
 
 meta <- run2_final@meta.data
 write.csv(meta, "/scratch/smallapragada/run2/proximity_results_allsamples_allCTs_2025_04_18/input/run2_final_metadata.csv", row.names = T)
