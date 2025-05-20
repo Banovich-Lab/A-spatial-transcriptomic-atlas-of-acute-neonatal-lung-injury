@@ -1075,6 +1075,7 @@ plot
 dev.off()
 
 ### Figure 3C - GA LS DX overlap volcano plot
+
 term_colors <- c("ga" = "#0073C2FF", 
                  "ls" = "#EFC000FF", 
                  "dx" = "#CD534CFF")
