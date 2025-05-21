@@ -26,9 +26,6 @@ angle <- theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ## "not in" operand function
 '%!in%' <- function(x,y)!('%in%'(x,y))
 
-## Final object
-run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_CT_updated_ids_2025_03_26.rds")
-
 ## Pulling the count and metadata files from Xenium output
 
 # Transcript files contain the gene counts per gene per file for both slides
