@@ -5120,7 +5120,10 @@ run2_final@meta.data <- run2_final@meta.data %>%
   mutate(dev_stages = case_when(run2_final$Sample_combined %in% c("PDL001", "PDL002") ~ "Early canalicular",
                                 run2_final$Sample_combined %in% c("PDL003", "PDL004", "PDL005", "PDL006") ~ "Late canalicular",
                                 run2_final$Sample_combined %in% c("PDL007", "PDL008", "PDL009", "PDL010",  "PDL011") ~ "Saccular",
-                                run2_final$Sample_combined %in% c("PDL014", "PDL016", "PDL015", "PDL017") ~ "Rare disease",
+                                run2_final$Sample_combined %in% c("PDL014") ~ "Rare disease (CHAOS)",
+                                run2_final$Sample_combined %in% c("PDL015") ~ "Rare disease (PH + Kidneys)",
+                                run2_final$Sample_combined %in% c("PDL016") ~ "Rare disease (Infant BPD)",
+                                run2_final$Sample_combined %in% c("PDL017") ~ "Rare disease (Adult BPD)",
                                 TRUE ~ "Alveolar"))
 
 ## Saving all final CT labels
