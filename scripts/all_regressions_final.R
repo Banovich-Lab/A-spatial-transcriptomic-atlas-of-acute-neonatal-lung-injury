@@ -10,7 +10,7 @@ set.seed(0712)
 work_dir <- setwd("/scratch/smallapragada/run2")
 
 # Read in object & get metadata
-run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_cniches_tniches_allsamples_2025_03_26.rds")
+run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_cniches_tniches_allsamples_2025_05_26.rds")
 
 #### SUBSETTING OBJECT AND MAKING GENE FILTERING THRESHOLD ----
 
