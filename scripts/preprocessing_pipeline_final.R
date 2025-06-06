@@ -522,6 +522,10 @@ DimPlot(merged_obj_filtered,
 ## Saving the filtered and split object
 saveRDS(merged_obj_filtered, "run2_filtered_split_adj_2024_08_15.rds")
 
+################## JUMP TO `seurat_to_anndata_final.ipynb` FOR CLUSTERING ##################
+                   
+########################### RETURN HERE FOR CELL TYPE ANNOTATION ###########################
+
 #### CELL TYPE ANNOTATION - SUBLINEAGE OBJECT SEPARATION ----
 
 ## Importing object post-RAPIDS processing
