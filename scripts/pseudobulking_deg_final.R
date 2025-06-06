@@ -11,7 +11,7 @@ work_dir <- setwd("/scratch/smallapragada/run2")
 options(scipen = 0)
 
 # Load data in
-run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_cniches_tniches_allsamples_2025_03_26.rds")
+run2_final <- readRDS("/scratch/smallapragada/run2/final_complete_cniches_tniches_allsamples_2025_05_26.rds")
 
 #### FILTERING THRESHOLD ----
 
