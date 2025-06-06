@@ -2312,7 +2312,9 @@ pdf("/home/smallapragada/manuscript_2024/niche_barchart_sample_supp.pdf", width 
 c_t_bar
 dev.off()
 
-### Supplementary figure 17
+### Supplementary figure 17 - Non-immune lineages
+
+### Volcano plots
 
 ## Pick the top three per category
 top_sig_genes <- all_stats_ga_sig %>%
@@ -2352,7 +2354,7 @@ plot <- ggplot(test, aes(x = ga_coef_lfc, y = -log10(adj_p_val_ga), alpha = sig_
         legend.position = "bottom",
         legend.text = element_text(color = "black", size = 6))
 
-pdf("/home/smallapragada/manuscript_2024/volcano_ga_supp.pdf", width = 3, height = 3.3)
+pdf("/home/smallapragada/manuscript_2024/volcano_ga_supp_nonimm.pdf", width = 3, height = 3.3)
 plot
 dev.off()
 
@@ -2394,7 +2396,7 @@ plot <- ggplot(test, aes(x = ls_coef_lfc, y = -log10(adj_p_val_ls), alpha = sig_
         legend.position = "bottom",
         legend.text = element_text(color = "black", size = 6))
 
-pdf("/home/smallapragada/manuscript_2024/volcano_ls_supp.pdf", width = 3, height = 3.3)
+pdf("/home/smallapragada/manuscript_2024/volcano_ls_supp_nonimm.pdf", width = 3, height = 3.3)
 plot
 dev.off()
 
@@ -2436,11 +2438,11 @@ plot <- ggplot(test, aes(x = dx_coef_lfc, y = -log10(adj_p_val_dx), alpha = sig_
         legend.position = "bottom",
         legend.text = element_text(color = "black", size = 6))
 
-pdf("/home/smallapragada/manuscript_2024/volcano_dx_supp.pdf", width = 3, height = 3.4)
+pdf("/home/smallapragada/manuscript_2024/volcano_dx_supp_nonimm.pdf", width = 3, height = 3.4)
 plot
 dev.off()
 
-### Supplementary figure 18
+### Venn diagram
 
 pairs_list_20 <- list(`Gestational age` = ga_pairs_with_thresh$gene_ct, 
                       `Life span` = ls_pairs_with_thresh$gene_ct, 
@@ -2454,7 +2456,154 @@ venn <- ggvenn(pairs_list_20,
                text_size = 2,
                show_percentage = FALSE)
 
-pdf("/home/smallapragada/manuscript_2024/venn_supp.pdf", width = 1.75, height = 1.75)
+pdf("/home/smallapragada/manuscript_2024/venn_supp_nonimm.pdf", width = 1.75, height = 1.75)
 venn
 dev.off()
 
+### Supplementary figure 18 - all lineages
+
+### Volcano plots
+
+## Pick the top three per category
+top_sig_genes <- all_stats_ga_sig %>%
+  filter(sig_ga == "Significant") %>%
+  arrange(desc(ga_coef_lfc)) %>%
+  slice_head(n = 5) %>%
+  select(gene_ct) %>%
+  mutate(gene_col = gene_ct)
+
+## Only label those
+test <- all_stats_ga_sig %>%
+  left_join(top_sig_genes %>% select(gene_ct, gene_col),
+            by = c("gene_ct"))
+
+plot <- ggplot(test, aes(x = ga_coef_lfc, y = -log10(adj_p_val_ga), alpha = sig_ga)) +
+  geom_point(size = 0.5, color = "#0073C2FF") + 
+  geom_label_repel(aes(label = gene_col), 
+                   size = 1.8, 
+                   max.overlaps = Inf, 
+                   box.padding = 0.25, 
+                   point.padding = 0.25,
+                   segment.size = 0.2,   
+                   min.segment.length = 0,
+                   show.legend = FALSE) +
+  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
+  xlab("logFC") + ylab("-log10(adj_p_val)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", size = 4),
+        axis.text.y = element_text(color = "black", size = 4),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "black", face = "bold", size = 6),
+        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
+        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
+        axis.ticks.x = element_line(color = "black"),
+        axis.ticks.y = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(color = "black", size = 6))
+
+pdf("/home/smallapragada/manuscript_2024/volcano_ga_supp_all.pdf", width = 3, height = 3.3)
+plot
+dev.off()
+
+## Pick the top three per category
+top_sig_genes <- all_stats_ls_sig %>%
+  filter(sig_ls == "Significant") %>%
+  arrange(desc(ls_coef_lfc)) %>%
+  slice_head(n = 5) %>%
+  select(gene_ct) %>%
+  mutate(gene_col = gene_ct)
+
+## Only label those
+test <- all_stats_ls_sig %>%
+  left_join(top_sig_genes %>% select(gene_ct, gene_col),
+            by = c("gene_ct"))
+
+plot <- ggplot(test, aes(x = ls_coef_lfc, y = -log10(adj_p_val_ls), alpha = sig_ls)) +
+  geom_point(size = 0.5, color = "#EFC000FF") + 
+  geom_label_repel(aes(label = gene_col), 
+                   size = 1.8, 
+                   max.overlaps = Inf, 
+                   box.padding = 0.25, 
+                   point.padding = 0.25,
+                   segment.size = 0.2,   
+                   min.segment.length = 0,
+                   show.legend = FALSE) +
+  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
+  xlab("logFC") + ylab("-log10(adj_p_val)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", size = 4),
+        axis.text.y = element_text(color = "black", size = 4),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "black", face = "bold", size = 6),
+        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
+        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
+        axis.ticks.x = element_line(color = "black"),
+        axis.ticks.y = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(color = "black", size = 6))
+
+pdf("/home/smallapragada/manuscript_2024/volcano_ls_supp_all.pdf", width = 3, height = 3.3)
+plot
+dev.off()
+
+## Pick the top three per category
+top_sig_genes <- dx_stats %>%
+  filter(sig_dx == "Significant") %>%
+  arrange(desc(dx_coef_lfc)) %>%
+  slice_head(n = 5) %>%
+  select(gene_ct) %>%
+  mutate(gene_col = gene_ct)
+
+## Only label those
+test <- dx_stats %>%
+  left_join(top_sig_genes %>% select(gene_ct, gene_col),
+            by = c("gene_ct"))
+
+plot <- ggplot(test, aes(x = dx_coef_lfc, y = -log10(adj_p_val_dx), alpha = sig_dx)) +
+  geom_point(size = 0.5, color = "#CD534CFF") + 
+  geom_label_repel(aes(label = gene_col), 
+                   size = 1.8, 
+                   max.overlaps = Inf, 
+                   box.padding = 0.25, 
+                   point.padding = 0.25,
+                   segment.size = 0.2,   
+                   min.segment.length = 0,
+                   show.legend = FALSE) +
+  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
+  xlab("logFC") + ylab("-log10(adj_p_val)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", size = 4),
+        axis.text.y = element_text(color = "black", size = 4),
+        axis.title.x = element_text(color = "black", face = "bold", size = 6),
+        axis.title.y = element_text(color = "black", face = "bold", size = 6),
+        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
+        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
+        axis.ticks.x = element_line(color = "black"),
+        axis.ticks.y = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(color = "black", size = 6))
+
+pdf("/home/smallapragada/manuscript_2024/volcano_dx_supp_all.pdf", width = 3, height = 3.4)
+plot
+dev.off()
+
+### Venn diagram
+
+pairs_list_20 <- list(`Gestational age` = ga_pairs_with_thresh$gene_ct, 
+                      `Life span` = ls_pairs_with_thresh$gene_ct, 
+                      `DX score` = dx_pairs_with_thresh$gene_ct)
+
+venn <- ggvenn(pairs_list_20, 
+               fill_color = c("#0073C2FF", "#EFC000FF", "#CD534CFF"),
+               stroke_size = 0.5, 
+               fill_alpha = 0.5,
+               set_name_size = 2,
+               text_size = 2,
+               show_percentage = FALSE)
+
+pdf("/home/smallapragada/manuscript_2024/venn_supp_all.pdf", width = 1.75, height = 1.75)
+venn
+dev.off()
