@@ -323,7 +323,7 @@ sample_props <- as.data.frame(table(run2_final$Sublineage, run2_final$Sample_com
 # Ordering bars
 sample_props$Sample_combined <- factor(sample_props$Sample_combined, level = c('PDL001', 'PDL002', 
                                                                                'PDL003', 'PDL006', 'PDL005',
-                                                                               'BLPDL008', 'PDL004', 'PDL007', 'PDL009', 
+                                                                               'PDL008', 'PDL004', 'PDL007', 'PDL009', 
                                                                                'PDL011', 'PDL012', 'PDL010', 'PDL013',
                                                                                'PDL016', 'PDL015', 'PDL014', 'PDL017'))
 
@@ -375,7 +375,6 @@ sample_plot <- ggplot(sample_props, aes(x = Sample_combined, y = Proportion,
         legend.key.size = unit(2.5, "mm"),
         legend.text = element_text(color = "black", size = 4),
         legend.position = "top") 
-
 
 pdf("/home/smallapragada/manuscript_2024/sample_barchart.pdf", width = 5, height = 2)
 sample_plot
@@ -1075,24 +1074,30 @@ plot
 dev.off()
 
 ### Figure 3C - GA LS DX overlap volcano plot
-
 term_colors <- c("ga" = "#0073C2FF", 
                  "ls" = "#EFC000FF", 
                  "dx" = "#CD534CFF")
 
 ## Pick the top three per category
+gene_ct_keep <- c("S100A2 - Basal", "HIF1A - PNEC", "HERPUD1 - AT2",
+                  "KRT6A - Basal", "HIF1A - Multiciliated", "PDGFRA - Fibroblasts",
+                  "EHMT1 - Secretory 3A2+ & 1A1+", "SEC11C - PNEC", "IL7R - Arterial")
+
 top_sig_genes <- all_stats_morphed %>%
   filter(sig == "Significant") %>%
+  filter(gene_ct %in% gene_ct_keep) %>%
   group_by(origin) %>%
-  arrange(desc(lfc), .by_group = TRUE) %>%
-  slice_head(n = 3) %>%
+  arrange(desc(abs(lfc)), .by_group = TRUE) %>%
   select(origin, gene_ct) %>%
   mutate(gene_col = gene_ct)
 
+top_sig_genes_kept <- top_sig_genes[c(1, 2, 4, 5, 7, 8, 11, 12, 13), ]
+
 ## Only label those
 test <- all_stats_morphed %>%
-  left_join(top_sig_genes %>% select(origin, gene_ct, gene_col),
-            by = c("origin", "gene_ct"))
+  left_join(top_sig_genes_kept %>% select(origin, gene_ct, gene_col),
+            by = c("origin", "gene_ct")) %>%
+  filter(-log10(adj_p_val) < 2.5)
 
 plot <- ggplot(test, aes(x = lfc, y = -log10(adj_p_val), col = origin, alpha = sig)) +
   geom_point(size = 0.5) + 
@@ -1100,6 +1105,7 @@ plot <- ggplot(test, aes(x = lfc, y = -log10(adj_p_val), col = origin, alpha = s
                    size = 1.8, 
                    max.overlaps = Inf, 
                    box.padding = 0.25, 
+                   
                    point.padding = 0.25,
                    segment.size = 0.2,   
                    min.segment.length = 0,
@@ -1121,7 +1127,7 @@ plot <- ggplot(test, aes(x = lfc, y = -log10(adj_p_val), col = origin, alpha = s
         legend.position = "top",
         legend.text = element_text(color = "black", size = 6))
 
-pdf("/home/smallapragada/manuscript_2024/volcano_top3.pdf", width = 3.5, height = 3.5)
+pdf("/home/smallapragada/manuscript_2024/volcano_top3.pdf", width = 3.5, height = 3.175)
 plot
 dev.off()
 
@@ -1129,9 +1135,7 @@ dev.off()
 
 ct_order_heat <- c("AT2", "Secretory 3A2+ & 1A1+", "Multiciliated",
                    "Basal", "PNEC", "Proliferating airway", "Arterial",
-                   "Fibroblasts", "Alveolar macrophages", "SPP1+ macrophages",
-                   "Plasma", "cDC", "Mast", "T", "Meg-Ery", 
-                   "Proliferating Meg-Ery", "Proliferating lymphoid")
+                   "Fibroblasts")
 
 test <- all_stats_morphed %>%
   filter(sig == "Significant") %>%
@@ -1177,13 +1181,29 @@ heatmap <- Heatmap(test,
                      grid_width = unit(0.3, "cm")   
                    ))
 
-pdf("/home/smallapragada/manuscript_2024/count_heatmap.pdf", width = 2, height = 3.25)
+pdf("/home/smallapragada/manuscript_2024/count_heatmap.pdf", width = 2, height = 2.75)
 draw(heatmap)
 dev.off()
 
 ### Figure 3E - Lollipop plots with genes in cell types across GA, LS, and DX
 
 ## Picking 5 gene - CT pairs in each overlap
+
+ga <- all_stats_morphed %>%
+  filter(lfc < 0) %>%
+  filter(origin == "ga")
+ls <- all_stats_morphed %>%
+  filter(lfc > 0) %>%
+  filter(origin == "ls")
+dx <- all_stats_morphed %>%
+  filter(lfc > 0) %>%
+  filter(origin == "dx")
+
+ga_ls_intersect <- intersect(ga$gene_ct, ls$gene_ct)
+ga_dx_intersect <- intersect(ga$gene_ct, dx$gene_ct)
+dx_ls_intersect <- intersect(dx$gene_ct, ls$gene_ct)
+
+overlaps <- intersect(intersect(ga_ls_intersect, ga_dx_intersect), dx_ls_intersect)
 
 ga_ls_intersect <- intersect(ga_pairs_with_thresh$gene_ct, ls_pairs_with_thresh$gene_ct)
 ga_dx_intersect <- intersect(ga_pairs_with_thresh$gene_ct, dx_pairs_with_thresh$gene_ct)
@@ -1194,11 +1214,11 @@ stats_morphed_pairs_chosen <- all_stats_morphed %>%
            gene_ct == 'HIF1A - Multiciliated' |
            gene_ct == 'S100A2 - Basal' |
            gene_ct == 'HMGA1 - Multiciliated' |
-           gene_ct == 'COL3A1 - Plasma' |
+           gene_ct == 'HERPUD1 - AT2' |
            gene_ct == 'SEC11C - PNEC') %>%
   mutate(gene_ct = fct_relevel(gene_ct, rev(c('S100A2 - Basal', 'HMGA1 - Multiciliated',
                                           'HIF1A - Multiciliated', 'IL7R - Arterial', 
-                                          'SEC11C - PNEC', 'COL3A1 - Plasma'))))
+                                          'SEC11C - PNEC', 'HERPUD1 - AT2'))))
 
 lolli <- stats_morphed_pairs_chosen %>%
   filter(origin == "ga") %>%
@@ -1329,7 +1349,336 @@ pdf("/home/smallapragada/manuscript_2024/sp_both_slides_supp.pdf", width = 7, he
 plot
 dev.off()
 
-### Supplementary figure 2
+### Supplemental figure 2
+
+run2_final$nCount_RNA <- as.numeric(run2_final$nCount_RNA)
+run2_final$nFeature_RNA <- as.numeric(run2_final$nFeature_RNA)
+
+## Order sample bars
+run2_final$Sample = factor(run2_final$Sample, levels=c("s1_PDL001", "s2_PDL001", "s1_PDL002", "s2_PDL002",
+                                                       "s1_PDL003", "s2_PDL003", "s1_PDL004", "s2_PDL004",
+                                                       "s1_PDL005", "s2_PDL005", "s1_PDL006", "s2_PDL006",
+                                                       "s1_PDL007", "s2_PDL007", "s1_PDL008", "s2_PDL008",
+                                                       "s1_PDL009", "s2_PDL009", "s1_PDL010", "s2_PDL010",
+                                                       "s1_PDL011", "s2_PDL011", "s1_PDL012", "s2_PDL012",
+                                                       "s1_PDL013", "s2_PDL013", "s1_PDL014", "s2_PDL014",
+                                                       "s1_PDL015", "s2_PDL015", "s1_PDL016", "s2_PDL016",
+                                                       "s1_PDL017", "s2_PDL017"))
+
+# Adding a grouping assignment
+run2_final@meta.data <- run2_final@meta.data %>%
+  mutate(groupings = case_when(run2_final@meta.data$Sample %in% c("s1_PDL001", "s2_PDL001", "s1_PDL002", "s2_PDL002") ~ "Early canalicular",
+                               run2_final@meta.data$Sample %in% c("s1_PDL003", "s2_PDL003", "s1_PDL004", "s2_PDL004", 
+                                                                  "s1_PDL005", "s2_PDL005", "s1_PDL006", "s2_PDL006") ~ "Late canalicular",
+                               run2_final@meta.data$Sample %in% c("s1_PDL007", "s2_PDL007", "s1_PDL008", "s2_PDL008", 
+                                                                  "s1_PDL009", "s2_PDL009", "s1_PDL010", "s2_PDL010", 
+                                                                  "s1_PDL011", "s2_PDL011") ~ "Saccular",
+                               run2_final@meta.data$Sample %in% c("s1_PDL012", "s2_PDL012", "s1_PDL013", "s2_PDL013") ~ "Alveolar",
+                               run2_final@meta.data$Sample %in% c("s1_PDL014", "s2_PDL014", "s1_PDL015", "s2_PDL015", 
+                                                                  "s1_PDL016", "s2_PDL016", "s1_PDL017", "s2_PDL017") ~ "Rare disease",
+                               TRUE ~ "help"))
+
+run2_final@meta.data$groupings <- factor(run2_final@meta.data$groupings, level = c('Early canalicular', 'Late canalicular', "Saccular", "Alveolar", "Rare disease"))
+
+# Colors
+samp_colors <- c("s1_PDL001" = "#F9F1CE", "s2_PDL001" = "#F9F1CE", 
+                 "s1_PDL002" = "#F4E6AA", "s2_PDL002" = "#F4E6AA",
+                 "s1_PDL003" = "#F8D493", "s2_PDL003" = "#F8D493", 
+                 "s1_PDL004" = "#F6C978", "s2_PDL004" = "#F6C978",
+                 "s1_PDL005" = "#F4BE5D", "s2_PDL005" = "#F4BE5D", 
+                 "s1_PDL006" = "#F2B342", "s2_PDL006" = "#F2B342",
+                 "s1_PDL007" = "#F9C899", "s2_PDL007" = "#F9C899", 
+                 "s1_PDL008" = "#F6B678", "s2_PDL008" = "#F6B678", 
+                 "s1_PDL009" = "#F4A456", "s2_PDL009" = "#F4A456", 
+                 "s1_PDL010" = "#F29134", "s2_PDL010" = "#F29134", 
+                 "s1_PDL011" = "#F07F12", "s2_PDL011" = "#F07F12",
+                 "s1_PDL012" = "#DD91C3", "s2_PDL012" = "#DD91C3",
+                 "s1_PDL013" = "#C43E96", "s2_PDL013" = "#C43E96",
+                 "s1_PDL014" = "#DB8D89", "s2_PDL014" = "#DB8D89", 
+                 "s1_PDL015" = "#D2716B", "s2_PDL015" = "#D2716B", 
+                 "s1_PDL016" = "#C9544E", "s2_PDL016" = "#C9544E", 
+                 "s1_PDL017" = "#C03830", "s2_PDL017" = "#C03830")
+
+## Violin plot - nCount_RNA
+plot <- VlnPlot(run2_final,
+                slot = "counts",
+                group.by = "Sample",
+                pt.size = 0,
+                features = "nCount_RNA") 
+
+# Get the groupings from metadata
+grouping_vector <- run2_final@meta.data[rownames(plot$data), "groupings"]
+
+# Add it to the plot data
+plot$data$groupings <- grouping_vector
+
+# Add faceting using the new column
+plot <- plot +
+  facet_grid(. ~ groupings, scales = "free_x", space = "free_x") +
+  theme_bw() +
+  scale_fill_manual(values = samp_colors) +
+  labs(title = "UMIs per cell", x = "Sample", y = "UMI count") +
+  theme(axis.text.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color = "black", size = 5),
+        axis.title.y = element_text(color = "black", size = 6, face = "bold"),
+        strip.background = element_rect(fill = "grey90", color = "black"),
+        strip.text = element_text(size = 7, face = "bold"),
+        axis.ticks.y = element_line(color = "black"),
+        plot.title = element_text(color = "black", hjust = 0.5, face = "bold", size = 10),
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none")
+
+## Change facet colors
+plot_facet <- ggplot_gtable(ggplot_build(plot))
+striprt <- which(grepl("strip-r", plot_facet$layout$name) | 
+                   grepl("strip-t", plot_facet$layout$name))
+fills <- c("#F4E6AA", "#F2B342", "#F07F12", "#C43E96", "#C03830") # Dev stage & Sample Types
+colors <- c(rep("black", 5), rep(NA, 1))
+font_colors <- c(rep("black", 5), rep("black", 1))
+k <- 1
+for (i in striprt) {
+  j <- which(grepl("rect", plot_facet$grobs[[i]]$grobs[[1]]$childrenOrder))
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$col <- colors[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j+1]]$children[[1]]$gp$col <- font_colors[k]
+  k <- k+1
+}
+
+pdf("/home/smallapragada/manuscript_2024/umis_per_samp_supp.pdf", width = 7.15, height = 3)
+gridExtra::grid.arrange(plot_facet)
+dev.off()
+
+## Violin plot - nFeature_RNA
+plot <- VlnPlot(run2_final,
+                slot = "counts",
+                group.by = "Sample",
+                pt.size = 0,
+                features = "nFeature_RNA") 
+
+# Get the groupings from metadata
+grouping_vector <- run2_final@meta.data[rownames(plot$data), "groupings"]
+
+# Add it to the plot data
+plot$data$groupings <- grouping_vector
+
+# Add faceting using the new column
+plot <- plot +
+  facet_grid(. ~ groupings, scales = "free_x", space = "free_x") +
+  theme_bw() +
+  scale_fill_manual(values = samp_colors) +
+  labs(title = "Genes per cell", x = "Sample", y = "Number of genes") +
+  theme(axis.text.x = element_text(color = "black", angle = 45, hjust = 1, size = 5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks.x = element_line(color = "black"),
+        axis.text.y = element_text(color = "black", size = 5),
+        axis.title.y = element_text(color = "black", size = 6, face = "bold"),
+        strip.background = element_rect(fill = "grey90", color = "black"),
+        strip.text = element_text(size = 7, face = "bold"),
+        axis.ticks.y = element_line(color = "black"),
+        plot.title = element_text(color = "black", hjust = 0.5, face = "bold", size = 10),
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        axis.title.x = element_text(color = "black", size = 6, face = "bold"),
+        legend.position = "none")
+
+## Change facet colors
+plot_facet <- ggplot_gtable(ggplot_build(plot))
+striprt <- which(grepl("strip-r", plot_facet$layout$name) | 
+                   grepl("strip-t", plot_facet$layout$name))
+fills <- c("#F4E6AA", "#F2B342", "#F07F12", "#C43E96", "#C03830") # Dev stage & Sample Types
+colors <- c(rep("black", 5), rep(NA, 1))
+font_colors <- c(rep("black", 5), rep("black", 1))
+k <- 1
+for (i in striprt) {
+  j <- which(grepl("rect", plot_facet$grobs[[i]]$grobs[[1]]$childrenOrder))
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$col <- colors[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j+1]]$children[[1]]$gp$col <- font_colors[k]
+  k <- k+1
+}
+
+pdf("/home/smallapragada/manuscript_2024/genes_per_samp_supp.pdf", width = 7.15, height = 3.5)
+gridExtra::grid.arrange(plot_facet)
+dev.off()
+
+### Supplemental figure 3
+
+### Unfiltered
+unfiltered <- readRDS("/scratch/smallapragada/run2/0005123_0005297_unfiltered_split_2024_08_15.rds")
+
+## Summarize the number of cells per cell type and lineage
+cells <- unfiltered@meta.data %>%
+  group_by(Sample) %>%
+  summarise(cell_count = n(), .groups = "drop")
+
+cells_adjusted <- cells[-c(1), ]
+
+cells_adjusted$cell_count <- as.numeric(cells_adjusted$cell_count)
+
+## Add formatted cell count labels
+cell_counts <- cells_adjusted %>%
+  mutate(label = ifelse(cell_count >= 1000, paste0(round(cell_count / 1000, 1), "k"), as.character(cell_count)))
+
+## Order sample bars
+cell_counts$Sample = factor(cell_counts$Sample, levels=c("s1_PDL001", "s2_PDL001", "s1_PDL002", "s2_PDL002",
+                                                         "s1_PDL003", "s2_PDL003", "s1_PDL004", "s2_PDL004",
+                                                         "s1_PDL005", "s2_PDL005", "s1_PDL006", "s2_PDL006",
+                                                         "s1_PDL007", "s2_PDL007", "s1_PDL008", "s2_PDL008",
+                                                         "s1_PDL009", "s2_PDL009", "s1_PDL010", "s2_PDL010",
+                                                         "s1_PDL011", "s2_PDL011", "s1_PDL012", "s2_PDL012",
+                                                         "s1_PDL013", "s2_PDL013", "s1_PDL014", "s2_PDL014",
+                                                         "s1_PDL015", "s2_PDL015", "s1_PDL016", "s2_PDL016",
+                                                         "s1_PDL017", "s2_PDL017"))
+
+# Adding a grouping assignment
+cell_counts <- cell_counts %>%
+  mutate(groupings = case_when(cell_counts$Sample %in% c("s1_PDL001", "s2_PDL001", "s1_PDL002", "s2_PDL002") ~ "Early canalicular",
+                               cell_counts$Sample %in% c("s1_PDL003", "s2_PDL003", "s1_PDL004", "s2_PDL004", 
+                                                         "s1_PDL005", "s2_PDL005", "s1_PDL006", "s2_PDL006") ~ "Late canalicular",
+                               cell_counts$Sample %in% c("s1_PDL007", "s2_PDL007", "s1_PDL008", "s2_PDL008", 
+                                                         "s1_PDL009", "s2_PDL009", "s1_PDL010", "s2_PDL010", 
+                                                         "s1_PDL011", "s2_PDL011") ~ "Saccular",
+                               cell_counts$Sample %in% c("s1_PDL012", "s2_PDL012", "s1_PDL013", "s2_PDL013") ~ "Alveolar",
+                               cell_counts$Sample %in% c("s1_PDL014", "s2_PDL014", "s1_PDL015", "s2_PDL015", 
+                                                         "s1_PDL016", "s2_PDL016", "s1_PDL017", "s2_PDL017") ~ "Rare disease",
+                               TRUE ~ "help"))
+
+cell_counts$groupings <- factor(cell_counts$groupings, level = c('Early canalicular', 'Late canalicular', "Saccular", "Alveolar", "Rare disease"))
+
+## Create the bar plot with proportional facet widths
+plot <- ggplot(cell_counts, aes(x = Sample, y = cell_count, fill = Sample)) +
+  geom_bar(stat = "identity", width = 0.5, color = "black") +  # Set bar width
+  geom_text(aes(label = label), vjust = -0.5, size = 1.75) +  # Add labels above bars
+  facet_grid(~ groupings, scales = "free_x", space = "free") +  # Proportional facet widths
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Add space above the bars
+  scale_fill_manual(values = samp_colors) + 
+  theme_classic() + 
+  labs(y = "Number of cells", x = " ", title = "Cell counts pre-filtering", fill = "Developmental stage") +
+  theme(axis.text.x = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(color = "black", size = 5),
+        axis.title.y = element_text(color = "black", size = 6, face = "bold"),
+        strip.background = element_rect(fill = "grey90", color = "black"),
+        strip.text = element_text(size = 7, face = "bold"),
+        axis.ticks.y = element_line(color = "black"),
+        plot.title = element_text(color = "black", hjust = 0.5, face = "bold", size = 10),
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none")
+
+## Change facet colors
+plot_facet <- ggplot_gtable(ggplot_build(plot))
+striprt <- which(grepl("strip-r", plot_facet$layout$name) | 
+                   grepl("strip-t", plot_facet$layout$name))
+fills <- c("#F4E6AA", "#F2B342", "#F07F12", "#C43E96", "#C03830") # Dev stage & Sample Types
+colors <- c(rep("black", 5), rep(NA, 1))
+font_colors <- c(rep("black", 5), rep("black", 1))
+k <- 1
+for (i in striprt) {
+  j <- which(grepl("rect", plot_facet$grobs[[i]]$grobs[[1]]$childrenOrder))
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$col <- colors[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j+1]]$children[[1]]$gp$col <- font_colors[k]
+  k <- k+1
+}
+
+pdf("/home/smallapragada/manuscript_2024/sample_cell_counts_unfiltered_supp.pdf", width = 7.238, height = 3)
+gridExtra::grid.arrange(plot_facet)
+dev.off()
+
+### Filtered
+
+## Summarize the number of cells per cell type and lineage
+cells <- run2_final@meta.data %>%
+  group_by(Sample) %>%
+  summarise(cell_count = n(), .groups = "drop")
+
+cells_adjusted$cell_count <- as.numeric(cells$cell_count)
+
+## Add formatted cell count labels
+cell_counts <- cells %>%
+  mutate(label = ifelse(cell_count >= 1000, paste0(round(cell_count / 1000, 1), "k"), as.character(cell_count)))
+
+## Order sample bars
+cell_counts$Sample = factor(cell_counts$Sample, levels=c("s1_PDL001", "s2_PDL001", "s1_PDL002", "s2_PDL002",
+                                                         "s1_PDL003", "s2_PDL003", "s1_PDL004", "s2_PDL004",
+                                                         "s1_PDL005", "s2_PDL005", "s1_PDL006", "s2_PDL006",
+                                                         "s1_PDL007", "s2_PDL007", "s1_PDL008", "s2_PDL008",
+                                                         "s1_PDL009", "s2_PDL009", "s1_PDL010", "s2_PDL010",
+                                                         "s1_PDL011", "s2_PDL011", "s1_PDL012", "s2_PDL012",
+                                                         "s1_PDL013", "s2_PDL013", "s1_PDL014", "s2_PDL014",
+                                                         "s1_PDL015", "s2_PDL015", "s1_PDL016", "s2_PDL016",
+                                                         "s1_PDL017", "s2_PDL017"))
+
+# Adding a grouping assignment
+cell_counts <- cell_counts %>%
+  mutate(groupings = case_when(cell_counts$Sample %in% c("s1_PDL001", "s2_PDL001", "s1_PDL002", "s2_PDL002") ~ "Early canalicular",
+                               cell_counts$Sample %in% c("s1_PDL003", "s2_PDL003", "s1_PDL004", "s2_PDL004", 
+                                                         "s1_PDL005", "s2_PDL005", "s1_PDL006", "s2_PDL006") ~ "Late canalicular",
+                               cell_counts$Sample %in% c("s1_PDL007", "s2_PDL007", "s1_PDL008", "s2_PDL008", 
+                                                         "s1_PDL009", "s2_PDL009", "s1_PDL010", "s2_PDL010", 
+                                                         "s1_PDL011", "s2_PDL011") ~ "Saccular",
+                               cell_counts$Sample %in% c("s1_PDL012", "s2_PDL012", "s1_PDL013", "s2_PDL013") ~ "Alveolar",
+                               cell_counts$Sample %in% c("s1_PDL014", "s2_PDL014", "s1_PDL015", "s2_PDL015", 
+                                                         "s1_PDL016", "s2_PDL016", "s1_PDL017", "s2_PDL017") ~ "Rare disease",
+                               TRUE ~ "help"))
+
+cell_counts$groupings <- factor(cell_counts$groupings, level = c('Early canalicular', 'Late canalicular', "Saccular", "Alveolar", "Rare disease"))
+
+## Create the bar plot with proportional facet widths
+plot <- ggplot(cell_counts, aes(x = Sample, y = cell_count, fill = Sample)) +
+  geom_bar(stat = "identity", width = 0.5, color = "black") +  # Set bar width
+  geom_text(aes(label = label), vjust = -0.5, size = 1.75) +  # Add labels above bars
+  facet_grid(~ groupings, scales = "free_x", space = "free") +  # Proportional facet widths
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +  # Add space above the bars
+  scale_fill_manual(values = samp_colors) + 
+  theme_classic() + 
+  labs(y = "Number of cells", x = "Sample", title = "Cell counts post-filtering", fill = "Developmental stage") +
+  theme(axis.text.x = element_text(color = "black", angle = 45, hjust = 1, size = 5),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks.x = element_line(color = "black"),
+        axis.text.y = element_text(color = "black", size = 5),
+        axis.title.y = element_text(color = "black", size = 6, face = "bold"),
+        strip.background = element_rect(fill = "grey90", color = "black"),
+        strip.text = element_text(size = 7, face = "bold"),
+        axis.ticks.y = element_line(color = "black"),
+        plot.title = element_text(color = "black", hjust = 0.5, face = "bold", size = 10),
+        legend.title = element_blank(),
+        legend.text = element_blank(),
+        axis.title.x = element_text(color = "black", size = 6, face = "bold"),
+        legend.position = "none")
+
+## Change facet colors
+plot_facet <- ggplot_gtable(ggplot_build(plot))
+striprt <- which(grepl("strip-r", plot_facet$layout$name) | 
+                   grepl("strip-t", plot_facet$layout$name))
+fills <- c("#F4E6AA", "#F2B342", "#F07F12", "#C43E96", "#C03830") # Dev stage & Sample Types
+colors <- c(rep("black", 5), rep(NA, 1))
+font_colors <- c(rep("black", 5), rep("black", 1))
+k <- 1
+for (i in striprt) {
+  j <- which(grepl("rect", plot_facet$grobs[[i]]$grobs[[1]]$childrenOrder))
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$fill <- fills[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j]]$gp$col <- colors[k]
+  plot_facet$grobs[[i]]$grobs[[1]]$children[[j+1]]$children[[1]]$gp$col <- font_colors[k]
+  k <- k+1
+}
+
+pdf("/home/smallapragada/manuscript_2024/sample_cell_counts_filtered_supp.pdf", width = 7.238, height = 3.5)
+gridExtra::grid.arrange(plot_facet)
+dev.off()
+
+### Supplementary figure 4
 
 ## Sample UMAP
 
@@ -1416,7 +1765,7 @@ pdf("/home/smallapragada/manuscript_2024/dotplot_supp.pdf", width = 7, height = 
 plot
 dev.off()
 
-### Supplementary figure 3
+### Supplementary figure 5
 
 dev_sample_props <- as.data.frame(table(run2_final$Sample_combined, run2_final$dev_stages)) %>%
   rename_with(~ "Sample_combined", .col = "Var1") %>%
@@ -1434,7 +1783,7 @@ dev_sample_props$dev_stage <- factor(dev_sample_props$dev_stage , level = c("Ear
                                                                             "Saccular", "Alveolar", "Rare disease"))
 
 plot <- ggplot(dev_sample_props, aes(x = dev_stage, y = Proportion,
-                                        fill = (Sample_combined))) +
+                                     fill = (Sample_combined))) +
   scale_y_continuous(expand = c(0, 0)) +  
   geom_bar(position = "stack", stat = "identity", width = 0.75) +
   scale_fill_manual(values = randomcoloR::distinctColorPalette(17)) +
@@ -1459,7 +1808,7 @@ pdf("/home/smallapragada/manuscript_2024/sample_barchart_dev_stage_supp.pdf", wi
 plot
 dev.off()
 
-### Supplementary figure 4
+### Supplementary figure 6
 
 sample_props <- as.data.frame(table(run2_final$CT_final, run2_final$Sample_combined)) %>%
   rename_with(~ "CT_final", .col = "Var1") %>%
@@ -1524,7 +1873,7 @@ pdf("/home/smallapragada/manuscript_2024/sample_barchart_ct_supp.pdf", width = 7
 sample_plot
 dev.off()
 
-### Supplementary figure 5
+### Supplementary figure 7
 
 ## Sample barchart of AT2 vs immature AT2
 
@@ -1580,15 +1929,15 @@ data_melted <- reshape2::melt(data, id.vars = "CT_final", variable.name = "Gene"
 ## Ordering cell types
 data_melted$CT_final <- factor(data_melted$CT_final, level = c( "Immature AT2", "Proliferating Immature alveolar",
                                                                 "AT1", "AT2", "Transitional AT2", 
-                                                               "Secretory 3A2+ & 1A1+", "Secretory MUC5B+", "Proliferating airway", 
-                                                               "Basal", "Proliferating basal", 
-                                                               "Multiciliated", "PNEC", "AKR1C1+ & AKR1C2+", "Arterial", 
-                                                               "Capillaries", "Venous", "Lymphatic endothelial", "Proliferating endothelial",
-                                                               "Fibroblasts", "Activated fibroblasts", "Adventitial fibroblasts", 
-                                                               "MyoFB", "SMC", "Pericytes", 
-                                                               "Alveolar macrophages", "SPP1+ macrophages", "Monocytes", "Proliferating monocytes",
-                                                               "Neutrophils", "Mast", "cDC", "pDC", "Plasma", "Meg-Ery", "Proliferating Meg-Ery", 
-                                                               "B", "T", "Treg", "NK & NKT", "Proliferating lymphoid"))
+                                                                "Secretory 3A2+ & 1A1+", "Secretory MUC5B+", "Proliferating airway", 
+                                                                "Basal", "Proliferating basal", 
+                                                                "Multiciliated", "PNEC", "AKR1C1+ & AKR1C2+", "Arterial", 
+                                                                "Capillaries", "Venous", "Lymphatic endothelial", "Proliferating endothelial",
+                                                                "Fibroblasts", "Activated fibroblasts", "Adventitial fibroblasts", 
+                                                                "MyoFB", "SMC", "Pericytes", 
+                                                                "Alveolar macrophages", "SPP1+ macrophages", "Monocytes", "Proliferating monocytes",
+                                                                "Neutrophils", "Mast", "cDC", "pDC", "Plasma", "Meg-Ery", "Proliferating Meg-Ery", 
+                                                                "B", "T", "Treg", "NK & NKT", "Proliferating lymphoid"))
 
 ## Upper threshold
 
@@ -1617,7 +1966,7 @@ pdf("/home/smallapragada/manuscript_2024/violin_sox9_allcts_supp.pdf", width = 7
 plot_exp
 dev.off()
 
-### Supplementary figure 6 - 14
+### Supplementary figure 8 - 16
 
 ## Proximity heatmaps
 
@@ -2164,7 +2513,7 @@ pdf("/home/smallapragada/manuscript_2024/prox_rd_a_samples_supp.pdf", width = 7.
 draw(hp)
 dev.off()
 
-### Supplementary figure 15
+### Supplementary figure 17
 
 plot <- DimPlot(cell_niches,
                 reduction = "sp",
@@ -2216,15 +2565,15 @@ pdf("/home/smallapragada/manuscript_2024/sp_both_slides_niches_transcript_supp.p
 plot
 dev.off()
 
-### Supplementary figure 16
+### Supplementary figure 18
 
 ## Ordering bars
 run2_final$Sample_combined <- factor(run2_final$Sample_combined, level = c("PDL001", "PDL002", "PDL003",
-                                                                             "PDL004", "PDL005", "PDL006",
-                                                                             "PDL007", "PDL008", "PDL009",
-                                                                             "PDL010", "PDL011", "PDL012",
-                                                                             "PDL013", "PDL014", "PDL015",
-                                                                             "PDL016", "PDL017"))
+                                                                           "PDL004", "PDL005", "PDL006",
+                                                                           "PDL007", "PDL008", "PDL009",
+                                                                           "PDL010", "PDL011", "PDL012",
+                                                                           "PDL013", "PDL014", "PDL015",
+                                                                           "PDL016", "PDL017"))
 
 ## Summarize the number of cells per niche and dev stage
 cell_counts_cniche <- run2_final@meta.data %>%
@@ -2277,7 +2626,7 @@ cell_counts_tniche <- run2_final@meta.data %>%
 
 ## Ordering TNiches 
 cell_counts_tniche$TNiches <- factor(cell_counts_tniche$TNiches, level = c("T1", "T2", "T3", "T4", "T5", "T6",
-                                                                         "T7", "T8", "T9", "T10", "T11"))
+                                                                           "T7", "T8", "T9", "T10", "T11"))
 
 tniche_plot <- ggplot(cell_counts_tniche, aes(x = cell_counts_tniche$Sample_combined, y = cell_counts_tniche$prop,
                                               fill = as.factor(cell_counts_tniche$TNiches))) +
@@ -2312,14 +2661,162 @@ pdf("/home/smallapragada/manuscript_2024/niche_barchart_sample_supp.pdf", width 
 c_t_bar
 dev.off()
 
-### Supplementary figure 17 - Non-immune lineages
+### Supplementary figure 19 - With immune
 
-### Volcano plots
+## Volcano plots 
 
 ## Pick the top three per category
 top_sig_genes <- all_stats_ga_sig %>%
   filter(sig_ga == "Significant") %>%
-  arrange(desc(ga_coef_lfc)) %>%
+  arrange(desc(abs(ga_coef_lfc))) %>%
+  slice_head(n = 5) %>%
+  select(gene_ct) %>%
+  mutate(gene_col = gene_ct)
+
+## Only label those
+test <- all_stats_ga_sig %>%
+  left_join(top_sig_genes %>% select(gene_ct, gene_col),
+            by = c("gene_ct"))
+
+plot <- ggplot(test, aes(x = ga_coef_lfc, y = -log10(adj_p_val_ga), alpha = sig_ga)) +
+  geom_point(size = 0.5, color = "#0073C2FF") + 
+  geom_label_repel(aes(label = gene_col), 
+                   size = 1.8, 
+                   max.overlaps = Inf, 
+                   box.padding = 0.25, 
+                   point.padding = 0.25,
+                   segment.size = 0.2,   
+                   min.segment.length = 0,
+                   show.legend = FALSE) +
+  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
+  xlab("logFC") + ylab("-log10(adj_p_val)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", size = 4),
+        axis.text.y = element_text(color = "black", size = 4),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "black", face = "bold", size = 6),
+        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
+        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
+        axis.ticks.x = element_line(color = "black"),
+        axis.ticks.y = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(color = "black", size = 6))
+
+pdf("/home/smallapragada/manuscript_2024/volcano_ga_supp.pdf", width = 3, height = 3.3)
+plot
+dev.off()
+
+## Pick the top three per category
+top_sig_genes <- all_stats_ls_sig %>%
+  filter(sig_ls == "Significant") %>%
+  arrange(desc(abs(ls_coef_lfc))) %>%
+  slice_head(n = 5) %>%
+  select(gene_ct) %>%
+  mutate(gene_col = gene_ct)
+
+## Only label those
+test <- all_stats_ls_sig %>%
+  left_join(top_sig_genes %>% select(gene_ct, gene_col),
+            by = c("gene_ct"))
+
+plot <- ggplot(test, aes(x = ls_coef_lfc, y = -log10(adj_p_val_ls), alpha = sig_ls)) +
+  geom_point(size = 0.5, color = "#EFC000FF") + 
+  geom_label_repel(aes(label = gene_col), 
+                   size = 1.8, 
+                   max.overlaps = Inf, 
+                   box.padding = 0.25, 
+                   point.padding = 0.25,
+                   segment.size = 0.2,   
+                   min.segment.length = 0,
+                   show.legend = FALSE) +
+  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
+  xlab("logFC") + ylab("-log10(adj_p_val)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", size = 4),
+        axis.text.y = element_text(color = "black", size = 4),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "black", face = "bold", size = 6),
+        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
+        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
+        axis.ticks.x = element_line(color = "black"),
+        axis.ticks.y = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(color = "black", size = 6))
+
+pdf("/home/smallapragada/manuscript_2024/volcano_ls_supp.pdf", width = 3, height = 3.3)
+plot
+dev.off()
+
+## Pick the top three per category
+top_sig_genes <- dx_stats %>%
+  filter(sig_dx == "Significant") %>%
+  arrange(desc(abs(dx_coef_lfc))) %>%
+  slice_head(n = 5) %>%
+  select(gene_ct) %>%
+  mutate(gene_col = gene_ct)
+
+## Only label those
+test <- dx_stats %>%
+  left_join(top_sig_genes %>% select(gene_ct, gene_col),
+            by = c("gene_ct"))
+
+plot <- ggplot(test, aes(x = dx_coef_lfc, y = -log10(adj_p_val_dx), alpha = sig_dx)) +
+  geom_point(size = 0.5, color = "#CD534CFF") + 
+  geom_label_repel(aes(label = gene_col), 
+                   size = 1.8, 
+                   max.overlaps = Inf, 
+                   box.padding = 0.25, 
+                   point.padding = 0.25,
+                   segment.size = 0.2,   
+                   min.segment.length = 0,
+                   show.legend = FALSE) +
+  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
+  xlab("logFC") + ylab("-log10(adj_p_val)") +
+  theme_bw() +
+  theme(axis.text.x = element_text(color = "black", size = 4),
+        axis.text.y = element_text(color = "black", size = 4),
+        axis.title.x = element_text(color = "black", face = "bold", size = 6),
+        axis.title.y = element_text(color = "black", face = "bold", size = 6),
+        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
+        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
+        axis.ticks.x = element_line(color = "black"),
+        axis.ticks.y = element_line(color = "black"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(color = "black", size = 6))
+
+pdf("/home/smallapragada/manuscript_2024/volcano_dx_supp.pdf", width = 3, height = 3.4)
+plot
+dev.off()
+
+## Without immune
+
+pairs_list_20 <- list(`Gestational age` = ga_pairs_with_thresh$gene_ct, 
+                      `Life span` = ls_pairs_with_thresh$gene_ct, 
+                      `DX score` = dx_pairs_with_thresh$gene_ct)
+
+venn <- ggvenn(pairs_list_20, 
+               fill_color = c("#0073C2FF", "#EFC000FF", "#CD534CFF"),
+               stroke_size = 0.5, 
+               fill_alpha = 0.5,
+               set_name_size = 2,
+               text_size = 2,
+               show_percentage = FALSE)
+
+pdf("/home/smallapragada/manuscript_2024/venn_supp.pdf", width = 1.75, height = 1.75)
+venn
+dev.off()
+
+### Supplementary figure 20 - Without immune
+
+### Volcano plots 
+
+## Pick the top three per category
+top_sig_genes <- all_stats_ga_sig %>%
+  filter(sig_ga == "Significant") %>%
+  arrange(desc(abs(ga_coef_lfc))) %>%
   slice_head(n = 5) %>%
   select(gene_ct) %>%
   mutate(gene_col = gene_ct)
@@ -2361,7 +2858,7 @@ dev.off()
 ## Pick the top three per category
 top_sig_genes <- all_stats_ls_sig %>%
   filter(sig_ls == "Significant") %>%
-  arrange(desc(ls_coef_lfc)) %>%
+  arrange(desc(abs(ls_coef_lfc))) %>%
   slice_head(n = 5) %>%
   select(gene_ct) %>%
   mutate(gene_col = gene_ct)
@@ -2403,7 +2900,7 @@ dev.off()
 ## Pick the top three per category
 top_sig_genes <- dx_stats %>%
   filter(sig_dx == "Significant") %>%
-  arrange(desc(dx_coef_lfc)) %>%
+  arrange(desc(abs(dx_coef_lfc))) %>%
   slice_head(n = 5) %>%
   select(gene_ct) %>%
   mutate(gene_col = gene_ct)
@@ -2457,153 +2954,5 @@ venn <- ggvenn(pairs_list_20,
                show_percentage = FALSE)
 
 pdf("/home/smallapragada/manuscript_2024/venn_supp_nonimm.pdf", width = 1.75, height = 1.75)
-venn
-dev.off()
-
-### Supplementary figure 18 - all lineages
-
-### Volcano plots
-
-## Pick the top three per category
-top_sig_genes <- all_stats_ga_sig %>%
-  filter(sig_ga == "Significant") %>%
-  arrange(desc(ga_coef_lfc)) %>%
-  slice_head(n = 5) %>%
-  select(gene_ct) %>%
-  mutate(gene_col = gene_ct)
-
-## Only label those
-test <- all_stats_ga_sig %>%
-  left_join(top_sig_genes %>% select(gene_ct, gene_col),
-            by = c("gene_ct"))
-
-plot <- ggplot(test, aes(x = ga_coef_lfc, y = -log10(adj_p_val_ga), alpha = sig_ga)) +
-  geom_point(size = 0.5, color = "#0073C2FF") + 
-  geom_label_repel(aes(label = gene_col), 
-                   size = 1.8, 
-                   max.overlaps = Inf, 
-                   box.padding = 0.25, 
-                   point.padding = 0.25,
-                   segment.size = 0.2,   
-                   min.segment.length = 0,
-                   show.legend = FALSE) +
-  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
-  xlab("logFC") + ylab("-log10(adj_p_val)") +
-  theme_bw() +
-  theme(axis.text.x = element_text(color = "black", size = 4),
-        axis.text.y = element_text(color = "black", size = 4),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(color = "black", face = "bold", size = 6),
-        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
-        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
-        axis.ticks.x = element_line(color = "black"),
-        axis.ticks.y = element_line(color = "black"),
-        legend.title = element_blank(),
-        legend.position = "bottom",
-        legend.text = element_text(color = "black", size = 6))
-
-pdf("/home/smallapragada/manuscript_2024/volcano_ga_supp_all.pdf", width = 3, height = 3.3)
-plot
-dev.off()
-
-## Pick the top three per category
-top_sig_genes <- all_stats_ls_sig %>%
-  filter(sig_ls == "Significant") %>%
-  arrange(desc(ls_coef_lfc)) %>%
-  slice_head(n = 5) %>%
-  select(gene_ct) %>%
-  mutate(gene_col = gene_ct)
-
-## Only label those
-test <- all_stats_ls_sig %>%
-  left_join(top_sig_genes %>% select(gene_ct, gene_col),
-            by = c("gene_ct"))
-
-plot <- ggplot(test, aes(x = ls_coef_lfc, y = -log10(adj_p_val_ls), alpha = sig_ls)) +
-  geom_point(size = 0.5, color = "#EFC000FF") + 
-  geom_label_repel(aes(label = gene_col), 
-                   size = 1.8, 
-                   max.overlaps = Inf, 
-                   box.padding = 0.25, 
-                   point.padding = 0.25,
-                   segment.size = 0.2,   
-                   min.segment.length = 0,
-                   show.legend = FALSE) +
-  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
-  xlab("logFC") + ylab("-log10(adj_p_val)") +
-  theme_bw() +
-  theme(axis.text.x = element_text(color = "black", size = 4),
-        axis.text.y = element_text(color = "black", size = 4),
-        axis.title.x = element_blank(),
-        axis.title.y = element_text(color = "black", face = "bold", size = 6),
-        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
-        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
-        axis.ticks.x = element_line(color = "black"),
-        axis.ticks.y = element_line(color = "black"),
-        legend.title = element_blank(),
-        legend.position = "bottom",
-        legend.text = element_text(color = "black", size = 6))
-
-pdf("/home/smallapragada/manuscript_2024/volcano_ls_supp_all.pdf", width = 3, height = 3.3)
-plot
-dev.off()
-
-## Pick the top three per category
-top_sig_genes <- dx_stats %>%
-  filter(sig_dx == "Significant") %>%
-  arrange(desc(dx_coef_lfc)) %>%
-  slice_head(n = 5) %>%
-  select(gene_ct) %>%
-  mutate(gene_col = gene_ct)
-
-## Only label those
-test <- dx_stats %>%
-  left_join(top_sig_genes %>% select(gene_ct, gene_col),
-            by = c("gene_ct"))
-
-plot <- ggplot(test, aes(x = dx_coef_lfc, y = -log10(adj_p_val_dx), alpha = sig_dx)) +
-  geom_point(size = 0.5, color = "#CD534CFF") + 
-  geom_label_repel(aes(label = gene_col), 
-                   size = 1.8, 
-                   max.overlaps = Inf, 
-                   box.padding = 0.25, 
-                   point.padding = 0.25,
-                   segment.size = 0.2,   
-                   min.segment.length = 0,
-                   show.legend = FALSE) +
-  scale_alpha_manual(values = c("Significant" = 1, "Not significant" = 0.1)) +
-  xlab("logFC") + ylab("-log10(adj_p_val)") +
-  theme_bw() +
-  theme(axis.text.x = element_text(color = "black", size = 4),
-        axis.text.y = element_text(color = "black", size = 4),
-        axis.title.x = element_text(color = "black", face = "bold", size = 6),
-        axis.title.y = element_text(color = "black", face = "bold", size = 6),
-        panel.grid.major.x = element_line(color = "grey80", linewidth = 0.4),
-        panel.grid.major.y = element_line(color = "grey80", linewidth = 0.4),
-        axis.ticks.x = element_line(color = "black"),
-        axis.ticks.y = element_line(color = "black"),
-        legend.title = element_blank(),
-        legend.position = "bottom",
-        legend.text = element_text(color = "black", size = 6))
-
-pdf("/home/smallapragada/manuscript_2024/volcano_dx_supp_all.pdf", width = 3, height = 3.4)
-plot
-dev.off()
-
-### Venn diagram
-
-pairs_list_20 <- list(`Gestational age` = ga_pairs_with_thresh$gene_ct, 
-                      `Life span` = ls_pairs_with_thresh$gene_ct, 
-                      `DX score` = dx_pairs_with_thresh$gene_ct)
-
-venn <- ggvenn(pairs_list_20, 
-               fill_color = c("#0073C2FF", "#EFC000FF", "#CD534CFF"),
-               stroke_size = 0.5, 
-               fill_alpha = 0.5,
-               set_name_size = 2,
-               text_size = 2,
-               show_percentage = FALSE)
-
-pdf("/home/smallapragada/manuscript_2024/venn_supp_all.pdf", width = 1.75, height = 1.75)
 venn
 dev.off()
