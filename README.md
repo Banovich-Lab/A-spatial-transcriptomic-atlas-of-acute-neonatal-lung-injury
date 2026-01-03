@@ -4,9 +4,7 @@
 
 ## Authors
 
-Saahithi Mallapragada<sup>1,2</sup>, Ruqian Lyu<sup>3</sup>, Arianna L. Williams-Katek<sup>1</sup>, Brandon K. Fischer<sup>1</sup>, Annika Vannan<sup>1</sup>, Niran Hadad<sup>1</sup>, Evan D. Mee<sup>1</sup>, Shawyon P. Shirazi<sup>4,5</sup>, Christopher S. Jetter<sup>4,5</sup>,  
-Nicholas M. Negretti<sup>4,5</sup>, Anne Hilgendorff<sup>6,7</sup>, Laurie C. Eldredge<sup>8,9</sup>, Gail H. Deutsch<sup>9,10</sup>,  
-Davis J. McCarthy<sup>3,14</sup>, Jonathan A. Kropski<sup>5,11,12,13</sup>, Jennifer M. S. Sucre<sup>4,5,13,*</sup>, **Nicholas E. Banovich**<sup>1,13,*</sup>
+Saahithi Mallapragada<sup>1,2</sup>, Ruqian Lyu<sup>3</sup>, Arianna L. Williams-Katek<sup>1</sup>, Brandon K. Fischer<sup>1</sup>, Annika Vannan<sup>1</sup>, Niran Hadad<sup>1</sup>, Evan D. Mee<sup>1</sup>, Shawyon P. Shirazi<sup>4,5</sup>, Christopher S. Jetter<sup>4,5</sup>, Nicholas M. Negretti<sup>4,5</sup>, Anne Hilgendorff<sup>6,7</sup>, Laurie C. Eldredge<sup>8,9</sup>, Gail H. Deutsch<sup>9,10</sup>, Davis J. McCarthy<sup>3,14</sup>, Jonathan A. Kropski<sup>5,11,12,13</sup>, Jennifer M. S. Sucre<sup>4,5,13,*</sup>, **Nicholas E. Banovich**<sup>1,13,*</sup>
 
 ---
 
